@@ -119,12 +119,18 @@ Production-grade, highly scalable backend API for Mini Trello built with **NestJ
 - PostgreSQL database (or Neon.tech)
 
 ### 2. Environment Variables (`Backend/.env`)
+Create a `.env` file from the provided `.env.example`:
+```bash
+cp .env.example .env
+```
+
+Configure your environment variables:
 ```env
 PORT=5000
-DATABASE_URL="postgresql://user:password@host:5432/dbname?sslmode=require"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/postgres?sslmode=disable"
 JWT_SECRET="your_jwt_secret_key"
 JWT_EXPIRES_IN="7d"
-CORS_ORIGIN="*"
+CORS_ORIGIN="http://localhost:3000"
 ```
 
 ### 3. Install Dependencies & Push Schema
