@@ -1,4 +1,13 @@
-import { IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsArray,
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
+import { Priority } from '@prisma/client';
 
 export class UpdateTaskDto {
   @IsOptional()
@@ -14,8 +23,17 @@ export class UpdateTaskDto {
   imageUrl?: string;
 
   @IsOptional()
-  @IsString()
-  columnId?: string;
+  @IsEnum(Priority)
+  priority?: Priority;
+
+  @IsOptional()
+  @IsDateString()
+  dueDate?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  labels?: string[];
 
   @IsOptional()
   @IsInt()

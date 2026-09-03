@@ -13,6 +13,13 @@ enum Role {
   VIEWER
 }
 
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
 model User {
   id           String        @id @default(uuid())
   email        String        @unique
@@ -22,6 +29,7 @@ model User {
   ownedBoards  Board[]       @relation("BoardOwner")
   memberships  BoardMember[]
   createdTasks Task[]        @relation("TaskCreator")
+  comments     Comment[]     @relation("UserComments")
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -62,15 +70,41 @@ model Column {
 }
 
 model Task {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   title       String
   description String?
   imageUrl    String?
+  priority    Priority  @default(MEDIUM)
+  dueDate     DateTime?
+  labels      String[]  @default([])
   position    Int
   columnId    String
-  column      Column   @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  column      Column    @relation(fields: [columnId], references: [id], onDelete: Cascade)
   creatorId   String?
-  creator     User?    @relation("TaskCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+  creator     User?     @relation("TaskCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+  subtasks    Subtask[]
+  comments    Comment[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Subtask {
+  id          String   @id @default(uuid())
+  title       String
+  isCompleted Boolean  @default(false)
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("UserComments", fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

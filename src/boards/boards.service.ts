@@ -107,6 +107,17 @@ export class BoardsService {
                 creator: {
                   select: { id: true, name: true, email: true },
                 },
+                subtasks: {
+                  orderBy: { createdAt: 'asc' },
+                },
+                comments: {
+                  orderBy: { createdAt: 'asc' },
+                  include: {
+                    author: {
+                      select: { id: true, name: true, avatarUrl: true },
+                    },
+                  },
+                },
               },
             },
           },
