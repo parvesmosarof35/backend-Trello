@@ -7,6 +7,7 @@ import { BoardsModule } from './boards/boards.module';
 import { BoardMembersModule } from './board-members/board-members.module';
 import { ColumnsModule } from './columns/columns.module';
 import { TasksModule } from './tasks/tasks.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -19,5 +20,6 @@ import { TasksModule } from './tasks/tasks.module';
     ColumnsModule,
     TasksModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}
