@@ -56,12 +56,10 @@ async function main() {
 
   console.log('✅ Created 4 users: Parves, Rahim, Sarah & Alex (Password: password123)');
 
-  // ==========================================
-  // BOARD 1: E-Commerce Platform V2
-  // ==========================================
+  // 2. Create Board 1: E-Commerce Platform
   const ecommerceBoard = await prisma.board.create({
     data: {
-      name: '🚀 E-Commerce Platform V2',
+      name: 'E-Commerce Platform V2',
       description: 'Main product roadmap, checkout flow, and UI redesign board',
       ownerId: parves.id,
       members: {
@@ -221,7 +219,7 @@ async function main() {
   // ==========================================
   const mobileBoard = await prisma.board.create({
     data: {
-      name: '📱 Mobile Application (iOS & Android)',
+      name: 'Mobile Application (iOS & Android)',
       description: 'Flutter and React Native companion app development',
       ownerId: rahim.id,
       members: {
@@ -309,7 +307,7 @@ async function main() {
   // ==========================================
   const marketingBoard = await prisma.board.create({
     data: {
-      name: '🎨 Brand Redesign & Marketing Campaign',
+      name: 'Brand Redesign & Marketing Campaign',
       description: 'Figma design systems, marketing landing pages, and launch press kits',
       ownerId: sarah.id,
       members: {
