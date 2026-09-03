@@ -18,6 +18,7 @@ model User {
   email        String        @unique
   name         String
   password     String
+  avatarUrl    String?
   ownedBoards  Board[]       @relation("BoardOwner")
   memberships  BoardMember[]
   createdTasks Task[]        @relation("TaskCreator")
@@ -64,6 +65,7 @@ model Task {
   id          String   @id @default(uuid())
   title       String
   description String?
+  imageUrl    String?
   position    Int
   columnId    String
   column      Column   @relation(fields: [columnId], references: [id], onDelete: Cascade)

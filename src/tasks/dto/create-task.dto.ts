@@ -10,6 +10,10 @@ export class CreateTaskDto {
   description?: string;
 
   @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @IsOptional()
   @IsInt()
   @Min(0)
   position?: number;

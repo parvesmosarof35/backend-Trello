@@ -11,6 +11,10 @@ export class UpdateTaskDto {
 
   @IsOptional()
   @IsString()
+  imageUrl?: string;
+
+  @IsOptional()
+  @IsString()
   columnId?: string;
 
   @IsOptional()

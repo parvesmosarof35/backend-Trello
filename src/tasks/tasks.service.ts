@@ -53,6 +53,7 @@ export class TasksService {
       data: {
         title: dto.title,
         description: dto.description,
+        imageUrl: dto.imageUrl,
         position,
         columnId,
         creatorId: userId,
