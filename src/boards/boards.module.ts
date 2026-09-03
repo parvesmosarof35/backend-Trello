@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { BoardsService } from './boards.service';
 import { BoardsController } from './boards.controller';
-import { BoardAccessGuard } from './guards/board-access.guard';
+import { BoardsGateway } from './boards.gateway';
 
 @Module({
   controllers: [BoardsController],
-  providers: [BoardsService, BoardAccessGuard],
-  exports: [BoardsService, BoardAccessGuard],
+  providers: [BoardsService, BoardsGateway],
+  exports: [BoardsService, BoardsGateway],
 })
 export class BoardsModule {}
