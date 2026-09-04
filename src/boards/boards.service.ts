@@ -4,12 +4,16 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { BoardsGateway } from './boards.gateway';
 import { CreateBoardDto } from './dto/create-board.dto';
 import { UpdateBoardDto } from './dto/update-board.dto';
 
 @Injectable()
 export class BoardsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private boardsGateway: BoardsGateway,
+  ) {}
 
   async create(userId: string, dto: CreateBoardDto) {
     const board = await this.prisma.board.create({
@@ -159,13 +163,16 @@ export class BoardsService {
       throw new ForbiddenException('You do not have permission to edit this board');
     }
 
-    return this.prisma.board.update({
+    const updatedBoard = await this.prisma.board.update({
       where: { id: boardId },
       data: dto,
       include: {
         owner: { select: { id: true, name: true, email: true } },
       },
     });
+
+    this.boardsGateway.notifyBoardUpdate(boardId, 'board:updated', updatedBoard);
+    return updatedBoard;
   }
 
   async remove(boardId: string, userId: string) {
@@ -185,6 +192,7 @@ export class BoardsService {
       where: { id: boardId },
     });
 
+    this.boardsGateway.notifyBoardUpdate(boardId, 'board:deleted', { boardId });
     return { message: 'Board deleted successfully' };
   }
 }

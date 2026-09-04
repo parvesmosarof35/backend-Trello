@@ -4,13 +4,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { BoardsGateway } from '../boards/boards.gateway';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
 
 @Injectable()
 export class TasksService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private boardsGateway: BoardsGateway,
+  ) {}
 
   private async verifyColumnAccess(columnId: string, userId: string) {
     const column = await this.prisma.column.findUnique({
@@ -38,7 +42,7 @@ export class TasksService {
   }
 
   async create(columnId: string, userId: string, dto: CreateTaskDto) {
-    await this.verifyColumnAccess(columnId, userId);
+    const column = await this.verifyColumnAccess(columnId, userId);
 
     let position = dto.position;
     if (position === undefined) {
@@ -49,7 +53,7 @@ export class TasksService {
       position = highestPositionTask ? highestPositionTask.position + 1 : 0;
     }
 
-    return this.prisma.task.create({
+    const createdTask = await this.prisma.task.create({
       data: {
         title: dto.title,
         description: dto.description,
@@ -64,6 +68,9 @@ export class TasksService {
         },
       },
     });
+
+    this.boardsGateway.notifyBoardUpdate(column.boardId, 'task:created', createdTask);
+    return createdTask;
   }
 
   async findAllByColumn(columnId: string, userId: string) {
@@ -138,7 +145,7 @@ export class TasksService {
       throw new ForbiddenException('You do not have permission to modify this task');
     }
 
-    return this.prisma.task.update({
+    const updatedTask = await this.prisma.task.update({
       where: { id: taskId },
       data: dto,
       include: {
@@ -147,6 +154,9 @@ export class TasksService {
         },
       },
     });
+
+    this.boardsGateway.notifyBoardUpdate(task.column.boardId, 'task:updated', updatedTask);
+    return updatedTask;
   }
 
   async remove(taskId: string, userId: string) {
@@ -193,6 +203,7 @@ export class TasksService {
       }),
     ]);
 
+    this.boardsGateway.notifyBoardUpdate(task.column.boardId, 'task:deleted', { taskId });
     return { message: 'Task deleted successfully' };
   }
 
@@ -314,7 +325,7 @@ export class TasksService {
       });
     }
 
-    return this.prisma.task.findUnique({
+    const movedTask = await this.prisma.task.findUnique({
       where: { id: taskId },
       include: {
         creator: {
@@ -322,5 +333,8 @@ export class TasksService {
         },
       },
     });
+
+    this.boardsGateway.notifyBoardUpdate(task.column.boardId, 'task:moved', movedTask);
+    return movedTask;
   }
 }

@@ -10,6 +10,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import { BoardsGateway } from '../boards/boards.gateway';
 import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateSubtaskDto {
@@ -31,19 +32,32 @@ export class UpdateSubtaskDto {
 @Controller('tasks/:taskId/subtasks')
 @UseGuards(JwtAuthGuard)
 export class SubtasksController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private boardsGateway: BoardsGateway,
+  ) {}
 
   @Post()
   async create(
     @Param('taskId') taskId: string,
     @Body() dto: CreateSubtaskDto,
   ) {
-    return this.prisma.subtask.create({
+    const subtask = await this.prisma.subtask.create({
       data: {
         title: dto.title.trim(),
         taskId,
       },
     });
+
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+      include: { column: true },
+    });
+    if (task?.column?.boardId) {
+      this.boardsGateway.notifyBoardUpdate(task.column.boardId, 'subtask:created', subtask);
+    }
+
+    return subtask;
   }
 
   @Patch(':id')
@@ -52,10 +66,20 @@ export class SubtasksController {
     @Param('id') id: string,
     @Body() dto: UpdateSubtaskDto,
   ) {
-    return this.prisma.subtask.update({
+    const subtask = await this.prisma.subtask.update({
       where: { id },
       data: dto,
     });
+
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+      include: { column: true },
+    });
+    if (task?.column?.boardId) {
+      this.boardsGateway.notifyBoardUpdate(task.column.boardId, 'subtask:updated', subtask);
+    }
+
+    return subtask;
   }
 
   @Delete(':id')
@@ -63,9 +87,19 @@ export class SubtasksController {
     @Param('taskId') taskId: string,
     @Param('id') id: string,
   ) {
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+      include: { column: true },
+    });
+
     await this.prisma.subtask.delete({
       where: { id },
     });
+
+    if (task?.column?.boardId) {
+      this.boardsGateway.notifyBoardUpdate(task.column.boardId, 'subtask:deleted', { id, taskId });
+    }
+
     return { message: 'Subtask deleted successfully' };
   }
 }

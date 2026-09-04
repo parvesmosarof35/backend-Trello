@@ -5,13 +5,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { BoardsGateway } from '../boards/boards.gateway';
 import { InviteMemberDto } from './dto/invite-member.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { Role } from '@prisma/client';
 
 @Injectable()
 export class BoardMembersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private boardsGateway: BoardsGateway,
+  ) {}
 
   async inviteMember(boardId: string, requesterId: string, dto: InviteMemberDto) {
     const board = await this.prisma.board.findUnique({
@@ -57,6 +61,7 @@ export class BoardMembersService {
       },
     });
 
+    this.boardsGateway.notifyBoardUpdate(boardId, 'member:joined', member);
     return member;
   }
 
@@ -117,13 +122,16 @@ export class BoardMembersService {
       throw new NotFoundException('Member record not found');
     }
 
-    return this.prisma.boardMember.update({
+    const updatedMember = await this.prisma.boardMember.update({
       where: { id: memberId },
       data: { role: dto.role },
       include: {
         user: { select: { id: true, name: true, email: true } },
       },
     });
+
+    this.boardsGateway.notifyBoardUpdate(boardId, 'member:updated', updatedMember);
+    return updatedMember;
   }
 
   async removeMember(boardId: string, memberId: string, requesterId: string) {
@@ -152,6 +160,7 @@ export class BoardMembersService {
       where: { id: memberId },
     });
 
+    this.boardsGateway.notifyBoardUpdate(boardId, 'member:removed', { memberId, userId: member.userId });
     return { message: 'Member removed from board successfully' };
   }
 }

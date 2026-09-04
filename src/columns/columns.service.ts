@@ -4,12 +4,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { BoardsGateway } from '../boards/boards.gateway';
 import { CreateColumnDto } from './dto/create-column.dto';
 import { UpdateColumnDto } from './dto/update-column.dto';
 
 @Injectable()
 export class ColumnsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private boardsGateway: BoardsGateway,
+  ) {}
 
   private async verifyBoardAccess(boardId: string, userId: string) {
     const board = await this.prisma.board.findUnique({
@@ -43,7 +47,7 @@ export class ColumnsService {
       position = highestPositionColumn ? highestPositionColumn.position + 1 : 0;
     }
 
-    return this.prisma.column.create({
+    const column = await this.prisma.column.create({
       data: {
         name: dto.name,
         position,
@@ -55,6 +59,9 @@ export class ColumnsService {
         },
       },
     });
+
+    this.boardsGateway.notifyBoardUpdate(boardId, 'column:created', column);
+    return column;
   }
 
   async findAllByBoard(boardId: string, userId: string) {
@@ -89,7 +96,7 @@ export class ColumnsService {
       throw new ForbiddenException('You do not have permission to modify this column');
     }
 
-    return this.prisma.column.update({
+    const updatedColumn = await this.prisma.column.update({
       where: { id: columnId },
       data: dto,
       include: {
@@ -98,6 +105,9 @@ export class ColumnsService {
         },
       },
     });
+
+    this.boardsGateway.notifyBoardUpdate(column.boardId, 'column:updated', updatedColumn);
+    return updatedColumn;
   }
 
   async remove(columnId: string, userId: string) {
@@ -122,6 +132,7 @@ export class ColumnsService {
       where: { id: columnId },
     });
 
+    this.boardsGateway.notifyBoardUpdate(column.boardId, 'column:deleted', { columnId });
     return { message: 'Column deleted successfully' };
   }
 }

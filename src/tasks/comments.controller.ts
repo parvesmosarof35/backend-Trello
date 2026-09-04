@@ -10,6 +10,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import { BoardsGateway } from '../boards/boards.gateway';
 import { IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateCommentDto {
@@ -21,7 +22,10 @@ export class CreateCommentDto {
 @Controller('tasks/:taskId/comments')
 @UseGuards(JwtAuthGuard)
 export class CommentsController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private boardsGateway: BoardsGateway,
+  ) {}
 
   @Get()
   async findAll(@Param('taskId') taskId: string) {
@@ -42,7 +46,7 @@ export class CommentsController {
     @GetUser('id') userId: string,
     @Body() dto: CreateCommentDto,
   ) {
-    return this.prisma.comment.create({
+    const comment = await this.prisma.comment.create({
       data: {
         content: dto.content.trim(),
         taskId,
@@ -54,6 +58,16 @@ export class CommentsController {
         },
       },
     });
+
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+      include: { column: true },
+    });
+    if (task?.column?.boardId) {
+      this.boardsGateway.notifyBoardUpdate(task.column.boardId, 'comment:created', comment);
+    }
+
+    return comment;
   }
 
   @Delete(':id')
@@ -62,9 +76,19 @@ export class CommentsController {
     @Param('id') id: string,
     @GetUser('id') userId: string,
   ) {
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+      include: { column: true },
+    });
+
     await this.prisma.comment.delete({
       where: { id },
     });
+
+    if (task?.column?.boardId) {
+      this.boardsGateway.notifyBoardUpdate(task.column.boardId, 'comment:deleted', { id, taskId });
+    }
+
     return { message: 'Comment deleted successfully' };
   }
 }
